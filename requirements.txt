@@ -1,0 +1,4 @@
+pyserial
+wiringpi
+raspberrypi-tm1637
+adafruit-circuitpython-am2320

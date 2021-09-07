@@ -1,0 +1,39 @@
+default login: pi
+default password: raspberry
+
+sudo rfkill unblock 0
+
+sudo raspi-config
+
+8 Update
+
+Localisation Options (5) -> Timezone -> Asia -> Almaty
+Localisation Options (5) -> L3 Keyboard -> Generic 105-key PC (intl.) -> English (US) -> Right Alt (AltGr) -> No compose
+
+System Options (1) -> S1 Wireless Lan -> Kazakhstan -> SSID -> Password
+
+Interface (2) -> P2 SSH -> Yes
+Interface (3) -> P4 SPI -> Yes
+Interface (3) -> P5 I2C -> Yes
+Interface (3) -> P6 Serial Port -> Login shell = false -> Serial port = true
+
+sudo apt install python3 python3-pip
+
+sudo pip3 install -r requirements.txt
+
+На raspberry
+hostname -I - получаем ip
+
+На машине источнике
+## для копирования
+scp <файл> pi@<ip>:/<путь>
+пример: scp seriaql_test_dev_weight.py  pi@192.168.218.11:/home/pi
+
+## для подклчения
+ssh pi@<ip>
+
+sudo apt -y update
+sudo apt -y upgrade
+sudo apt -y dist-upgrade
+sudo apt -y clean
+sudo apt -y install --no-install-recommends xserver-xorg xinit raspberrypi-ui-mods lxsession chromium-browser
