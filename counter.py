@@ -371,7 +371,6 @@ def count_rfid(rfid):
                         logger.debug(wg)
 
                 count = count + 1
-                display.show(count)
                 logger.debug(len(id_list) - 1)
 
 
@@ -438,8 +437,12 @@ def main():
         if is_mode_count_rfid_and_weight():
             count_rfid(rfid)
             count_weight()
+            if display is not None:
+                display.show(count)
         elif is_mode_count_rfid():
             count_rfid(rfid)
+            if display is not None:
+                display.show(count)
         elif is_mode_send_data():
             write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
