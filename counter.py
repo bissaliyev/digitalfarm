@@ -487,12 +487,12 @@ def main():
             count_rfid(rfid)
             count_weight()
             if display is not None:
-                display.number(cnt-1)
+                display.number(len(cnt) - 1)
                 pass
         elif is_mode_count_rfid():
             count_rfid(rfid)
             if display is not None:
-                display.number(cnt-1)
+                display.number(len(cnt) - 1)
         elif is_mode_send_data():
             write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
