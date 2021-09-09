@@ -29,7 +29,7 @@ msg_list = [""]
 inputByte = 0
 inputBytes = [0] * 5
 name = ""
-data_list = ''
+data_list = {}
 tag_id = ""
 msg = ""
 ant = -1
@@ -309,7 +309,7 @@ def count_rfid(rfid):
     global display
 
     # Serial READ
-    if rfid.inWaiting() > 0:
+    if rfid.in_waiting > 0:
         inputByte = rfid.read()
         if inputByte == b'\x43':
             inputByte = rfid.read(2)
@@ -413,14 +413,14 @@ def count_weight():
         sleep(0.001)
         error = wiringpi.millis()
 
-        while scales.inWaiting() == 0:
+        while scales.in_waiting == 0:
             if wiringpi.millis() - error >= 1000:
                 perm = 0
                 weight = None
                 break
-        if scales.inWaiting() > 0 and perm:
+        if scales.in_waiting > 0 and perm:
             a = 0
-            while scales.inWaiting():
+            while scales.in_waiting:
                 inputBytes[a] = scales.read()
                 if a < 2:
                     a = a + 1
@@ -470,11 +470,24 @@ def main():
             count_weight()
             if display is not None:
                 # display.number(cnt)
-                display.show(str(cnt1_list[0] + cnt2_list[0] + cnt3_list[0] + cnt4_list[0]))
+                c = []
+                tmp_cnt = 0
+                for d in data_list["data"]:
+                    if d["tag_id"] not in c:
+                        c.append(d["tag_id"])
+                        tmp_cnt = tmp_cnt + 1
+                display.number(tmp_cnt)
         elif is_mode_count_rfid():
             count_rfid(rfid)
             if display is not None:
-                display.show(str(cnt1_list[0] + cnt2_list[0] + cnt3_list[0] + cnt4_list[0]))
+                # display.number(cnt)
+                c = []
+                tmp_cnt = 0
+                for d in data_list["data"]:
+                    if d["tag_id"] not in c:
+                        c.append(d["tag_id"])
+                        tmp_cnt = tmp_cnt + 1
+                display.number(tmp_cnt)
         elif is_mode_send_data():
             write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
