@@ -16,21 +16,6 @@ import serial
 import tm1637
 import wiringpi
 
-logging.config.fileConfig('logging.yaml')
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-logFormatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
-
-fileHandler = logging.FileHandler("/home/pi/digitalfarm.log")
-fileHandler.setFormatter(logFormatter)
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-
-logger.addHandler(consoleHandler)
-logger.addHandler(fileHandler)
-
 LOAD_URL = "http://digitalfarm.kz/loadMove"
 STATUS_URL = "http://digitalfarm.kz/statusResult"
 CONFIG_FILE_PATH = '/home/pi/setup.txt'
