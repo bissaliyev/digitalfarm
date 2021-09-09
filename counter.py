@@ -326,14 +326,14 @@ def count_rfid(rfid):
                 rssi = tag_id[data_length * 2 + 4: len(tag_id)]
                 msg = tag_id[36: data_length * 2 + 4]
 
-                logger.info('ID (msg) = ' + msg)
-                logger.info('Antena #' + str(ant))
-                logger.info('RSSI = ' + rssi)
-                logger.info('Length (data_length) = ' + str(data_length))
-                logger.info('tag_id = ' + str(tag_id))
-                logger.info('msg_list = ' + str(msg_list))
-                logger.info('id_list = ' + str(id_list))
-                logger.info('rssi_list = ' + str(rssi_list))
+                # logger.info('ID (msg) = ' + msg)
+                # logger.info('Antena #' + str(ant))
+                # logger.info('RSSI = ' + rssi)
+                # logger.info('Length (data_length) = ' + str(data_length))
+                # logger.info('tag_id = ' + str(tag_id))
+                # logger.info('msg_list = ' + str(msg_list))
+                # logger.info('id_list = ' + str(id_list))
+                # logger.info('rssi_list = ' + str(rssi_list))
 
 
                 perm = 0
@@ -405,20 +405,20 @@ def count_rfid(rfid):
                         logger.debug(wg)
 
                 count = count + 1
-                logger.debug(len(id_list) - 1)
+                # logger.debug(len(id_list) - 1)
 
-                logger.info('ID (msg) = ' + msg)
-                logger.info('Antena #' + str(ant))
-                logger.info('RSSI = ' + rssi)
-                logger.info('Length (data_length) = ' + str(data_length))
-                logger.info('tag_id = ' + str(tag_id))
-                logger.info('msg_list = ' + str(msg_list))
-                logger.info('id_list = ' + str(id_list))
-                logger.info('rssi_list = ' + str(rssi_list))
-                logger.info('cnt1_list = ' + str(cnt1_list))
-                logger.info('cnt2_list = ' + str(cnt2_list))
-                logger.info('cnt3_list = ' + str(cnt3_list))
-                logger.info('cnt4_list = ' + str(cnt4_list))
+                # logger.info('ID (msg) = ' + msg)
+                # logger.info('Antena #' + str(ant))
+                # logger.info('RSSI = ' + rssi)
+                # logger.info('Length (data_length) = ' + str(data_length))
+                # logger.info('tag_id = ' + str(tag_id))
+                # logger.info('msg_list = ' + str(msg_list))
+                # logger.info('id_list = ' + str(id_list))
+                # logger.info('rssi_list = ' + str(rssi_list))
+                # logger.info('cnt1_list = ' + str(cnt1_list))
+                # logger.info('cnt2_list = ' + str(cnt2_list))
+                # logger.info('cnt3_list = ' + str(cnt3_list))
+                # logger.info('cnt4_list = ' + str(cnt4_list))
 
 
 def count_weight():
@@ -452,7 +452,7 @@ def count_weight():
         if wiringpi.millis() - delay >= 3000:
             perm = 0
 
-    logger.debug("weight = " + str(weight))
+    logger.debug("!!!>>>> weight = " + str(weight))
     return weight
 
 
