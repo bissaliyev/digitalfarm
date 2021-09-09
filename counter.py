@@ -326,10 +326,10 @@ def count_rfid(rfid):
                 rssi = tag_id[data_length * 2 + 4: len(tag_id)]
                 msg = tag_id[36: data_length * 2 + 4]
 
-                # logger.info('ID (msg) = ' + msg)
-                # logger.info('Antena #' + str(ant))
-                # logger.info('RSSI = ' + rssi)
-                # logger.info('Length (data_length) = ' + str(data_length))
+                logger.info('ID (msg) = ' + msg)
+                logger.info('Antena #' + str(ant))
+                logger.info('RSSI = ' + rssi)
+                logger.info('Length (data_length) = ' + str(data_length))
                 # logger.info('tag_id = ' + str(tag_id))
                 # logger.info('msg_list = ' + str(msg_list))
                 # logger.info('id_list = ' + str(id_list))
