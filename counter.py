@@ -110,7 +110,8 @@ def connect_scales(weight_port1="/dev/ttyUSB0", weight_port2="/dev/ttyUSB1"):
     scales = None
     for port in [weight_port1, weight_port2]:
         try:
-            scales = serial.Serial(port, baudrate=4800, parity=serial.PARITY_EVEN, timeout=1)
+            # scales = serial.Serial(port, baudrate=4800, parity=serial.PARITY_EVEN, timeout=1)
+            scales = serial.Serial(port, baudrate=115200, parity=serial.PARITY_EVEN, timeout=1)
         except serial.SerialException as ex:
             logger.error("Could not connect weight scales to port : " + port + ". Exception: " + str(ex))
         if scales is not None:
