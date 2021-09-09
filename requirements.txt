@@ -1,3 +1,4 @@
+yaml
 pyserial
 wiringpi
 raspberrypi-tm1637

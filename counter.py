@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 import json
+from dataclasses import dataclass
+from typing import List, Union
+
+import yaml
 import logging
 import os
 import socket
@@ -12,6 +16,7 @@ import serial
 import tm1637
 import wiringpi
 
+logging.config.fileConfig('logging.yaml')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -66,6 +71,44 @@ GPIO.setmode(GPIO.BCM)
 
 GPIO.setup(5, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # switch 1 (BOARD 29 / BCM 5)
 GPIO.setup(6, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # switch 2 (BOARD 31 / BCM 6)
+
+
+@dataclass
+class CountItem:
+    time: datetime
+    tag_id: str
+    cnt: str
+    RSSI: str
+    length: int = 0
+    ant1: int = 0
+    ant2: int = 0
+    ant3: int = 0
+    ant4: int = 0
+
+
+@dataclass
+class CountInfo:
+    date: datetime
+    company_code: str
+    data: List[Union[CountItem, None]]
+
+
+class RFIDCounter:
+    pass
+
+
+class WeightScales:
+    pass
+
+
+class Display:
+    pass
+
+
+def setup_logging():
+    with open('logging.yaml', 'rt') as file:
+        config = yaml.safe_load(file.read())
+        logging.config.dictConfig(config)
 
 
 def connect_rfid(rfid_port="/dev/ttyS0"):
@@ -413,6 +456,9 @@ rfid = None
 scales = None
 display = None
 
+setup_logging()
+logger = logging.getLogger(__name__)
+
 
 def main():
     global scales, rfid, display
@@ -438,11 +484,11 @@ def main():
             count_rfid(rfid)
             count_weight()
             if display is not None:
-                display.number(count)
+                display.number(cnt)
         elif is_mode_count_rfid():
             count_rfid(rfid)
             if display is not None:
-                display.number(count)
+                display.number(cnt)
         elif is_mode_send_data():
             write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
