@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import List, Union
 
 import yaml
-import logging
+import logging.config
 import os
 import socket
 from datetime import datetime
