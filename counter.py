@@ -325,10 +325,15 @@ def count_rfid(rfid):
                 rssi = tag_id[data_length * 2 + 4: len(tag_id)]
                 msg = tag_id[36: data_length * 2 + 4]
 
-                logger.info('ID = ' + msg)
+                logger.info('ID (msg) = ' + msg)
                 logger.info('Antena #' + str(ant))
                 logger.info('RSSI = ' + rssi)
-                logger.info('Length = ' + str(data_length))
+                logger.info('Length (data_length) = ' + str(data_length))
+                logger.info('tag_id = ' + str(tag_id))
+                logger.info('msg_list = ' + str(msg_list))
+                logger.info('id_list = ' + str(id_list))
+                logger.info('rssi_list = ' + str(rssi_list))
+
 
                 perm = 0
                 # flag = 0
@@ -401,6 +406,19 @@ def count_rfid(rfid):
                 count = count + 1
                 logger.debug(len(id_list) - 1)
 
+                logger.info('ID (msg) = ' + msg)
+                logger.info('Antena #' + str(ant))
+                logger.info('RSSI = ' + rssi)
+                logger.info('Length (data_length) = ' + str(data_length))
+                logger.info('tag_id = ' + str(tag_id))
+                logger.info('msg_list = ' + str(msg_list))
+                logger.info('id_list = ' + str(id_list))
+                logger.info('rssi_list = ' + str(rssi_list))
+                logger.info('cnt1_list = ' + str(cnt1_list))
+                logger.info('cnt2_list = ' + str(cnt2_list))
+                logger.info('cnt3_list = ' + str(cnt3_list))
+                logger.info('cnt4_list = ' + str(cnt4_list))
+
 
 def count_weight():
     global scales
@@ -470,24 +488,11 @@ def main():
             count_weight()
             if display is not None:
                 # display.number(cnt)
-                c = []
-                tmp_cnt = 0
-                for d in data_list["data"]:
-                    if d["tag_id"] not in c:
-                        c.append(d["tag_id"])
-                        tmp_cnt = tmp_cnt + 1
-                display.number(tmp_cnt)
+                pass
         elif is_mode_count_rfid():
             count_rfid(rfid)
             if display is not None:
-                # display.number(cnt)
-                c = []
-                tmp_cnt = 0
-                for d in data_list["data"]:
-                    if d["tag_id"] not in c:
-                        c.append(d["tag_id"])
-                        tmp_cnt = tmp_cnt + 1
-                display.number(tmp_cnt)
+                pass
         elif is_mode_send_data():
             write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
