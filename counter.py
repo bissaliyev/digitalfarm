@@ -452,7 +452,7 @@ def count_weight():
         if wiringpi.millis() - delay >= 3000:
             perm = 0
 
-    logger.debug("!!!>>>> weight = " + str(weight))
+    logger.info("!!!>>>> weight = " + str(weight))
     return weight
 
 
