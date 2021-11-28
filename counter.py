@@ -8,7 +8,7 @@ import logging.config
 import os
 import socket
 from datetime import datetime
-from time import sleep
+from time import sleep, strftime
 
 import RPi.GPIO as GPIO
 import requests
@@ -159,6 +159,7 @@ def is_connected_to_internet(host="8.8.8.8", port=53, timeout=3):
     try:
         socket.setdefaulttimeout(timeout)
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        logger.info("Connected to internet")
         return True
     except socket.error as ex:
         logger.error("Could not connect to internet: " + ex)
@@ -166,39 +167,39 @@ def is_connected_to_internet(host="8.8.8.8", port=53, timeout=3):
 
 
 def is_server_online(url):
+    global name
+    
+    logger.info("[name] = " + name)
+    
     try:
-        response = requests.head(url)
-    except IOError:
-        logger.error("Server is offline")
+        logger.info("Sending status data")
+        json_data = {
+            "date": strftime("%Y-%m-%d") + ' ' + strftime("%H:%M:%S"),
+            "company_code": str(name),
+            "data": [
+                {
+                    "time": strftime("%H:%M:%S"),
+                    "tag_id": "is_ready"
+                }
+            ]
+        }
+        response = requests.post(url, json=json_data)
+        #Status check ex. "success\n{'company_id': 2, 'date': datetime.date(2021, 11, 2), 'time': datetime.time(22, 35, 26), 'status': 'is_ready', 'created_date': datetime.datetime(2021, 11, 2, 16, 35, 27, 936763)}"
+    except IOError as ex:
+        logger.error("Server status check failed " + ex)
         return False
 
+    #logger.info("[response] status: " + str(response.status_code))
+    #logger.info("[response] text: " + response.text)
+    
     if response.status_code == requests.codes.ok:
+        logger.info("Status data is sent")
+    if response.text.find('success') >= 0:
         logger.info("Server is online")
-        logger.info("Sending status data")
-        try:
-            json_data = {
-                "date": time.strftime("%Y-%m-%d") + ' ' + time.strftime("%H:%M:%S"),
-                "company_code": str(name),
-                "data": [
-                    {
-                        "time": time.strftime("%H:%M:%S"),
-                        "tag_id": "is_ready"
-                    }
-                ]
-            }
-            response = requests.post(url, json=json_data)
-        except IOError as ex:
-            logger.error("Server status check failed " + ex)
-            return False
-
-        if response.status_code == requests.codes.ok:
-            logger.info("Status data is sent")
-        if response.text.find('success') >= 0:
-            logger.info("Server is online")
-            return True
-        else:
-            logger.info('Server is offline')
-            return False
+        return True
+    else:
+        logger.info('Server is offline')
+        return False
 
 
 def is_json(f):
@@ -221,17 +222,17 @@ def write_data_file():
 
     time = datetime.today()
 
-    FILE_WRITE = '/home/pi/data/rfid_' + str(time.strftime("%Y-%m-%d")) + ' ' + str(time.strftime("%H:%M:%S")) + '.txt'
+    FILE_WRITE = '/home/pi/data/rfid_' + str(strftime("%Y-%m-%d")) + ' ' + str(strftime("%H:%M:%S")) + '.txt'
 
     # check file
     # first tid
     clear_file(FILE_WRITE)
     data_list = {
-        "date": time.strftime("%Y-%m-%d"),
+        "date": strftime("%Y-%m-%d"),
         "company_code": str(name),
         "data": [
             {
-                "time": time.strftime("%H:%M:%S"),
+                "time": strftime("%H:%M:%S"),
                 "tag_id": id_list[0],
                 "length": length_list[0],
                 "ant1": cnt1_list[0],
@@ -253,7 +254,7 @@ def write_data_file():
                 with open(FILE_WRITE) as json_file:
                     data_list = json.load(json_file)
                     new_data = {
-                        "time": time.strftime("%H:%M:%S"),
+                        "time": strftime("%H:%M:%S"),
                         "tag_id": id_list[i],
                         "length": length_list[i],
                         "ant1": cnt1_list[i],
@@ -286,15 +287,19 @@ def show(key):
 
 
 def send_data_to_server(url, json_data):
-    logger.info("Started data file upload")
-    response = ""
+    response = None
     try:
+        logger.info("Started data file upload")
         response = requests.post(url, json=json_data)
     except IOError:
         logger.error("Could not upload data file to server")
         return False
     finally:
-        if response.text.find('success') >= 0:
+        #if response.text.find('success') >= 0:
+        #successfull response ex. "{'status':'ok','cnt_load_str': 1}"
+        #logger.info("[response] status: " + str(response.status_code))
+        #logger.info("[response] text: " + response.text)
+        if response.status_code == requests.codes.ok:
             logger.info("Finished data file upload")
             return True
         else:
@@ -465,11 +470,13 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    global scales, rfid, display
+    global scales, rfid, display, name
     logger.info("Application started")
 
     config = parse_app_config(CONFIG_FILE_PATH)
     name = config["NAME"]
+
+    #logger.info("[config] = " + json.dumps(config))
 
     if is_mode_count_rfid_and_weight():
         logger.info("Mode 1: RFID and Weight")
