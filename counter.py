@@ -12,7 +12,7 @@ import serial
 import tm1637
 import wiringpi
 import yaml
-from sqlalchemy import create_engine, and_, func
+from sqlalchemy import create_engine, and_, func, distinct
 from sqlalchemy.orm import sessionmaker
 
 from models import Base, Count, Status
@@ -193,72 +193,6 @@ def is_json(f):
     return True
 
 
-def new_count(rfid):
-    if rfid.in_waiting > 0:
-        buffer = rfid.read()
-        if buffer == b'\x43':
-            buffer = rfid.read(2)
-            if buffer.hex() == "5400":
-                tag_id = "435400"
-                buffer = rfid.read(1)
-                data_length = int(buffer.hex(), 16)
-                tag_id = tag_id + str(buffer.hex())
-                buffer = rfid.read(data_length)
-                tag_id = tag_id + str(buffer.hex())
-
-                ant = int(tag_id[34:36])
-                rssi = tag_id[data_length * 2 + 4: len(tag_id)]
-                # msg = tag_id[36: data_length * 2 + 4]
-
-                ant1 = 1 if ant == 1 else 0
-                ant2 = 1 if ant == 2 else 0
-                ant3 = 1 if ant == 3 else 0
-                ant4 = 1 if ant == 4 else 0
-
-                # old one
-                count_item: Count = session.query(Count).filter(
-                    and_(
-                        Count.tag_id == tag_id,
-                        Count.status == Status.READY,
-                        Count.created_date == datetime.today().strftime("%Y-%m-%d")
-                    )
-                ).one_or_none()
-
-                weight = count_weight() if is_mode_count_rfid_and_weight() else 0
-                # weight = 0
-
-                if count_item is not None:
-                    sum_ant = str(int(count_item.cnt) + ant1 + ant2 + ant3 + ant4)
-                    count_item.update(
-                        {
-                            Count.rssi: rssi,
-                            Count.length: data_length,
-                            Count.ant1: Count.ant1 + ant1,
-                            Count.ant2: Count.ant2 + ant2,
-                            Count.ant3: Count.ant3 + ant3,
-                            Count.ant4: Count.ant4 + ant4,
-                            Count.cnt: sum_ant,
-                            Count.weight: weight
-                        }
-                    )
-                else:
-                    count_item = Count(
-                        company=name,
-                        tag_id=tag_id,
-                        length=data_length,
-                        ant1=ant1,
-                        ant2=ant2,
-                        ant3=ant3,
-                        ant4=ant4,
-                        cnt=str(ant1 + ant2 + ant3 + ant4),
-                        rssi=rssi,
-                        weight=weight
-                    )
-                    session.add(count_item)
-
-                session.commit()
-
-
 def write_data_file():
     global name, count, cnt, wg, data_list, msg, index, time, cnt1_list, cnt2_list, cnt3_list, cnt4_list, id_list, rssi_list, length_list
 
@@ -332,49 +266,52 @@ def show(key):
         return False
 
 
-def send_data_to_server(url):
-    response = None
-    try:
-        logger.info("Started data file upload")
-        # items: Count = session.query(Count).filter(Count.status == Status.READY).one_or_none()
+def send_data_to_server1(url):
+    dates = session.query(func.strftime("%Y-%m-%d", Count.created_date)).distinct().filter(Count.status == Status.READY)
+    
+    for date in dates:
+        logger.info(date)
+        json_data = {
+            "date": date[0],
+            "company_code": str(name),
+            "data": []
+        }
+        
+        items = session.query(Count).filter(func.strftime("%Y-%m-%d", Count.created_date) == date[0]).filter(Count.status == Status.READY)
+        
+        for item in items:
+            json_data["data"].append(
+                {
+                    "time": item.created_date.strftime("%H:%M:%S"),
+                    "tag_id": item.tag_id,
+                    "length": item.length,
+                    "ant1": item.ant1,
+                    "ant2": item.ant2,
+                    "ant3": item.ant3,
+                    "ant4": item.ant4,
+                    "cnt": item.cnt,
+                    "RSSI": item.rssi,
+                    "weight": item.weight
+                }
+            )
+        
+        
+        response = None
+        try:
+            logger.info("Started data file upload")
+            response = requests.post(url, json=json_data)
+        except IOError:
+            logger.error("Could not upload data file to server for " + date[0])
+        finally:
+            # if response.text.find('success') >= 0:
+            # successfull response ex. "{'status':'ok','cnt_load_str': 1}"
+            logger.info("[response] status: " + str(response.status_code))
+            logger.info("[response] text: " + response.text)
+            if response.status_code == requests.codes.ok:
+                logger.info("Finished data file upload for " + date[0])
+            else:
+                logger.error("Error while uploading data file to server for " + date[0])
 
-        items = session.query(func.strftime("%Y-%m-%d", Count.created_date), Count).group_by(func.strftime("%Y-%m-%d", Count.created_date)).filter(Count.status == Status.READY).all()
-        logger.info(items)
-
-        # template = {
-        #     "date": strftime("%Y-%m-%d"),
-        #     "company_code": str(name),
-        #     "data": [
-        #         {
-        #             "time": strftime("%H:%M:%S"),
-        #             "tag_id": id_list[0],
-        #             "length": length_list[0],
-        #             "ant1": cnt1_list[0],
-        #             "ant2": cnt2_list[0],
-        #             "ant3": cnt3_list[0],
-        #             "ant4": cnt4_list[0],
-        #             "cnt": str(cnt1_list[0] + cnt2_list[0] + cnt3_list[0] + cnt4_list[0]),
-        #             "RSSI": rssi_list[0],
-        #             "weight": wg[0]
-        #         }
-        #     ]
-        # }
-        # response = requests.post(url, json=json_data)
-    except IOError:
-        logger.error("Could not upload data file to server")
-        return False
-    finally:
-        # if response.text.find('success') >= 0:
-        # successfull response ex. "{'status':'ok','cnt_load_str': 1}"
-        # logger.info("[response] status: " + str(response.status_code))
-        # logger.info("[response] text: " + response.text)
-        # if response.status_code == requests.codes.ok:
-        #     logger.info("Finished data file upload")
-        #     return True
-        # else:
-        #     logger.error("Error while uploading data file to server")
-        #     return False
-        pass
 
 
 def send_data_to_server(url, json_data):
@@ -396,6 +333,74 @@ def send_data_to_server(url, json_data):
         else:
             logger.error("Error while uploading data file to server")
             return False
+
+
+def new_count(rfid):
+    buffer = None
+    if rfid.in_waiting > 0:
+        buffer = rfid.read()
+        if buffer == b'\x43':
+            buffer = rfid.read(2)
+            if buffer.hex() == "5400":
+                tag_id = "435400"
+                buffer = rfid.read(1)
+                data_length = int(buffer.hex(), 16)
+                tag_id = tag_id + str(buffer.hex())
+                buffer = rfid.read(data_length)
+                tag_id = tag_id + str(buffer.hex())
+
+                ant = int(tag_id[34:36])
+                rssi = tag_id[data_length * 2 + 4: len(tag_id)]
+                dyn_tag_id = tag_id[36: data_length * 2 + 4]
+                
+            
+                ant1 = 1 if ant == 1 else 0
+                ant2 = 1 if ant == 2 else 0
+                ant3 = 1 if ant == 3 else 0
+                ant4 = 1 if ant == 4 else 0
+
+                # old one
+                count_item: Count = session.query(Count).filter(
+                    and_(
+                        Count.tag_id == dyn_tag_id,
+                        Count.status == Status.READY,
+                        Count.created_date == datetime.today().strftime("%Y-%m-%d")
+                    )
+                ).one_or_none()
+
+                #weight = count_weight() if is_mode_count_rfid_and_weight() else 0
+                weight = 0
+
+                if count_item is not None:
+                    sum_ant = str(int(count_item.cnt) + ant1 + ant2 + ant3 + ant4)
+                    count_item.update(
+                        {
+                            Count.rssi: rssi,
+                            Count.length: data_length,
+                            Count.ant1: Count.ant1 + ant1,
+                            Count.ant2: Count.ant2 + ant2,
+                            Count.ant3: Count.ant3 + ant3,
+                            Count.ant4: Count.ant4 + ant4,
+                            Count.cnt: sum_ant,
+                            Count.weight: weight
+                        }
+                    )
+                else:
+                    count_item = Count(
+                        company=name,
+                        tag_id=dyn_tag_id,
+                        length=data_length,
+                        ant1=ant1,
+                        ant2=ant2,
+                        ant3=ant3,
+                        ant4=ant4,
+                        cnt=str(ant1 + ant2 + ant3 + ant4),
+                        rssi=rssi,
+                        weight=weight
+                    )
+                    session.add(count_item)
+
+                session.commit()
 
 
 def count_rfid(rfid):
@@ -565,14 +570,13 @@ def main():
             if display is not None:
                 display.number(len(cnt) - 1)
         elif is_mode_send_data():
-            # write_data_file()
+            #write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
-                # send_data_to_server(LOAD_URL, data_list)
-                send_data_to_server(LOAD_URL)
+                send_data_to_server1(LOAD_URL)
             else:
                 logger.error("Could not connect to server")
-            logger.info("System shutdown")
-            # os.system("sudo shutdown")
+            #logger.info("System shutdown")
+            #os.system("sudo shutdown")
             break
         else:
             logger.error("Abnormal behavior")
