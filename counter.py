@@ -12,7 +12,7 @@ import serial
 import tm1637
 import wiringpi
 import yaml
-from sqlalchemy import create_engine, and_
+from sqlalchemy import create_engine, and_, func
 from sqlalchemy.orm import sessionmaker
 
 from models import Base, Count, Status
@@ -208,9 +208,8 @@ def new_count(rfid):
 
                 ant = int(tag_id[34:36])
                 rssi = tag_id[data_length * 2 + 4: len(tag_id)]
-                msg = tag_id[36: data_length * 2 + 4]
-                
-            
+                # msg = tag_id[36: data_length * 2 + 4]
+
                 ant1 = 1 if ant == 1 else 0
                 ant2 = 1 if ant == 2 else 0
                 ant3 = 1 if ant == 3 else 0
@@ -225,8 +224,8 @@ def new_count(rfid):
                     )
                 ).one_or_none()
 
-                #weight = count_weight() if is_mode_count_rfid_and_weight() else 0
-                weight = 0
+                weight = count_weight() if is_mode_count_rfid_and_weight() else 0
+                # weight = 0
 
                 if count_item is not None:
                     sum_ant = str(int(count_item.cnt) + ant1 + ant2 + ant3 + ant4)
@@ -331,6 +330,51 @@ def show(key):
     logger.debug('Write PAR File {0}'.format(key))
     if key == Key.delete:
         return False
+
+
+def send_data_to_server(url):
+    response = None
+    try:
+        logger.info("Started data file upload")
+        # items: Count = session.query(Count).filter(Count.status == Status.READY).one_or_none()
+
+        items = session.query(func.strftime("%Y-%m-%d", Count.created_date), Count).group_by(func.strftime("%Y-%m-%d", Count.created_date)).filter(Count.status == Status.READY).all()
+        logger.info(items)
+
+        # template = {
+        #     "date": strftime("%Y-%m-%d"),
+        #     "company_code": str(name),
+        #     "data": [
+        #         {
+        #             "time": strftime("%H:%M:%S"),
+        #             "tag_id": id_list[0],
+        #             "length": length_list[0],
+        #             "ant1": cnt1_list[0],
+        #             "ant2": cnt2_list[0],
+        #             "ant3": cnt3_list[0],
+        #             "ant4": cnt4_list[0],
+        #             "cnt": str(cnt1_list[0] + cnt2_list[0] + cnt3_list[0] + cnt4_list[0]),
+        #             "RSSI": rssi_list[0],
+        #             "weight": wg[0]
+        #         }
+        #     ]
+        # }
+        # response = requests.post(url, json=json_data)
+    except IOError:
+        logger.error("Could not upload data file to server")
+        return False
+    finally:
+        # if response.text.find('success') >= 0:
+        # successfull response ex. "{'status':'ok','cnt_load_str': 1}"
+        # logger.info("[response] status: " + str(response.status_code))
+        # logger.info("[response] text: " + response.text)
+        # if response.status_code == requests.codes.ok:
+        #     logger.info("Finished data file upload")
+        #     return True
+        # else:
+        #     logger.error("Error while uploading data file to server")
+        #     return False
+        pass
 
 
 def send_data_to_server(url, json_data):
@@ -521,13 +565,14 @@ def main():
             if display is not None:
                 display.number(len(cnt) - 1)
         elif is_mode_send_data():
-            write_data_file()
+            # write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
-                send_data_to_server(LOAD_URL, data_list)
+                # send_data_to_server(LOAD_URL, data_list)
+                send_data_to_server(LOAD_URL)
             else:
                 logger.error("Could not connect to server")
             logger.info("System shutdown")
-            os.system("sudo shutdown")
+            # os.system("sudo shutdown")
             break
         else:
             logger.error("Abnormal behavior")
