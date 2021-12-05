@@ -194,65 +194,70 @@ def is_json(f):
 
 
 def new_count(rfid):
-    buffer = None
     if rfid.in_waiting > 0:
-        buffer = rfid.read(4)
-        tag_id = buffer[0:3].hex()
-        if tag_id == "435400":
-            data_length = int(buffer[3].hex(), 16)
-            buffer = rfid.read(data_length)
-            tag_id += str(buffer.hex())
+        buffer = rfid.read()
+        if buffer == b'\x43':
+            buffer = rfid.read(2)
+            if buffer.hex() == "5400":
+                tag_id = "435400"
+                buffer = rfid.read(1)
+                data_length = int(buffer.hex(), 16)
+                tag_id = tag_id + str(buffer.hex())
+                buffer = rfid.read(data_length)
+                tag_id = tag_id + str(buffer.hex())
 
-            ant = int(tag_id[34:36])
-            rssi = tag_id[data_length * 2 + 4:len(tag_id)]
-            # msg = tag_id[36:data_length * 2 + 4]
+                ant = int(tag_id[34:36])
+                rssi = tag_id[data_length * 2 + 4: len(tag_id)]
+                msg = tag_id[36: data_length * 2 + 4]
+                
+            
+                ant1 = 1 if ant == 1 else 0
+                ant2 = 1 if ant == 2 else 0
+                ant3 = 1 if ant == 3 else 0
+                ant4 = 1 if ant == 4 else 0
 
-            ant1 = 1 if ant == 1 else 0
-            ant2 = 1 if ant == 2 else 0
-            ant3 = 1 if ant == 3 else 0
-            ant4 = 1 if ant == 4 else 0
+                # old one
+                count_item: Count = session.query(Count).filter(
+                    and_(
+                        Count.tag_id == tag_id,
+                        Count.status == Status.READY,
+                        Count.created_date == datetime.today().strftime("%Y-%m-%d")
+                    )
+                ).one_or_none()
 
-            # old one
-            count_item: Count = session.query(Count).filter(
-                and_(
-                    Count.tag_id == tag_id,
-                    Count.status == Status.READY,
-                    Count.created_date == datetime.today().strftime("%Y-%m-%d")
-                )
-            ).one_or_none()
+                #weight = count_weight() if is_mode_count_rfid_and_weight() else 0
+                weight = 0
 
-            weight = count_weight() if is_mode_count_rfid_and_weight() else 0
+                if count_item is not None:
+                    sum_ant = str(int(count_item.cnt) + ant1 + ant2 + ant3 + ant4)
+                    count_item.update(
+                        {
+                            Count.rssi: rssi,
+                            Count.length: data_length,
+                            Count.ant1: Count.ant1 + ant1,
+                            Count.ant2: Count.ant2 + ant2,
+                            Count.ant3: Count.ant3 + ant3,
+                            Count.ant4: Count.ant4 + ant4,
+                            Count.cnt: sum_ant,
+                            Count.weight: weight
+                        }
+                    )
+                else:
+                    count_item = Count(
+                        company=name,
+                        tag_id=tag_id,
+                        length=data_length,
+                        ant1=ant1,
+                        ant2=ant2,
+                        ant3=ant3,
+                        ant4=ant4,
+                        cnt=str(ant1 + ant2 + ant3 + ant4),
+                        rssi=rssi,
+                        weight=weight
+                    )
+                    session.add(count_item)
 
-            if count_item is not None:
-                sum_ant = str(int(count_item.cnt) + ant1 + ant2 + ant3 + ant4)
-                count_item.update(
-                    {
-                        Count.rssi: rssi,
-                        Count.length: data_length,
-                        Count.ant1: Count.ant1 + ant1,
-                        Count.ant2: Count.ant2 + ant2,
-                        Count.ant3: Count.ant3 + ant3,
-                        Count.ant4: Count.ant4 + ant4,
-                        Count.cnt: sum_ant,
-                        Count.weight: weight
-                    }
-                )
-            else:
-                count_item = Count(
-                    company=name,
-                    tag_id=tag_id,
-                    length=data_length,
-                    ant1=ant1,
-                    ant2=ant2,
-                    ant3=ant3,
-                    ant4=ant4,
-                    cnt=str(ant1 + ant2 + ant3 + ant4),
-                    rssi=rssi,
-                    weight=weight
-                )
-                session.add(count_item)
-
-            session.commit()
+                session.commit()
 
 
 def write_data_file():

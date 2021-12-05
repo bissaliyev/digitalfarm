@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Enum
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -15,7 +15,7 @@ class Count(Base):
     __tablename__ = 'count'
     id = Column(Integer, primary_key=True)
     company = Column("company", String)
-    created_date = Column("created_date", DateTime, default=datetime.datetime.utcnow)
+    created_date = Column("created_date", DateTime, default=datetime.utcnow)
     tag_id = Column("tag_id", String)
     length = Column("length", Integer)
     ant1 = Column("ant1", Integer)
@@ -25,7 +25,7 @@ class Count(Base):
     cnt = Column("cnt", Integer)
     rssi = Column("rssi", String)
     weight = Column("weight", Integer)
-    status = Column(enum.Enum(Status), default=Status.READY)
+    status = Column(Enum(Status), default=Status.READY)
 
     def __init__(self, company, tag_id, length, ant1, ant2, ant3, ant4, cnt, rssi, weight):
         self.company = company
