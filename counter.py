@@ -309,6 +309,8 @@ def send_data_to_server1(url):
             logger.info("[response] text: " + response.text)
             if response.status_code == requests.codes.ok:
                 logger.info("Finished data file upload for " + date[0])
+                items.update({Count.status: Status.SENT})
+                session.commit()
             else:
                 logger.error("Error while uploading data file to server for " + date[0])
 
@@ -368,8 +370,8 @@ def new_count(rfid):
                     )
                 ).one_or_none()
 
-                #weight = count_weight() if is_mode_count_rfid_and_weight() else 0
-                weight = 0
+                weight = count_weight() if is_mode_count_rfid_and_weight() else 0
+                # weight = 0
 
                 if count_item is not None:
                     sum_ant = str(int(count_item.cnt) + ant1 + ant2 + ant3 + ant4)
