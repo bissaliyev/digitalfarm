@@ -268,7 +268,7 @@ def show(key):
 
 def send_data_to_server1(url):
     dates = session.query(func.strftime("%Y-%m-%d", Count.created_date)).distinct().filter(Count.status == Status.READY)
-    
+
     for date in dates:
         logger.info(date)
         json_data = {
@@ -276,9 +276,10 @@ def send_data_to_server1(url):
             "company_code": str(name),
             "data": []
         }
-        
-        items = session.query(Count).filter(func.strftime("%Y-%m-%d", Count.created_date) == date[0]).filter(Count.status == Status.READY)
-        
+
+        items = session.query(Count).filter(func.strftime("%Y-%m-%d", Count.created_date) == date[0]).filter(
+            Count.status == Status.READY)
+
         for item in items:
             json_data["data"].append(
                 {
@@ -294,8 +295,7 @@ def send_data_to_server1(url):
                     "weight": item.weight
                 }
             )
-        
-        
+
         response = None
         try:
             logger.info("Started data file upload")
@@ -313,7 +313,6 @@ def send_data_to_server1(url):
                 session.commit()
             else:
                 logger.error("Error while uploading data file to server for " + date[0])
-
 
 
 def send_data_to_server(url, json_data):
@@ -354,8 +353,7 @@ def new_count(rfid):
                 ant = int(tag_id[34:36])
                 rssi = tag_id[data_length * 2 + 4: len(tag_id)]
                 dyn_tag_id = tag_id[36: data_length * 2 + 4]
-                
-            
+
                 ant1 = 1 if ant == 1 else 0
                 ant2 = 1 if ant == 2 else 0
                 ant3 = 1 if ant == 3 else 0
@@ -372,6 +370,16 @@ def new_count(rfid):
 
                 weight = count_weight() if is_mode_count_rfid_and_weight() else 0
                 # weight = 0
+
+                logger.info(">>>")
+                logger.info("[TagID] = " + str(dyn_tag_id))
+                logger.info("[RSSI] = " + str(rssi))
+                logger.info("[Length] = " + str(data_length))
+                logger.info("[Ant1] = " + str(ant1))
+                logger.info("[Ant2] = " + str(ant2))
+                logger.info("[Ant3] = " + str(ant3))
+                logger.info("[Ant4] = " + str(ant4))
+                logger.info("[Weight] = " + str(weight))
 
                 if count_item is not None:
                     sum_ant = str(int(count_item.cnt) + ant1 + ant2 + ant3 + ant4)
@@ -572,13 +580,13 @@ def main():
             if display is not None:
                 display.number(len(cnt) - 1)
         elif is_mode_send_data():
-            #write_data_file()
+            # write_data_file()
             if is_connected_to_internet() and is_server_online(STATUS_URL):
                 send_data_to_server1(LOAD_URL)
             else:
                 logger.error("Could not connect to server")
-            #logger.info("System shutdown")
-            #os.system("sudo shutdown")
+            # logger.info("System shutdown")
+            # os.system("sudo shutdown")
             break
         else:
             logger.error("Abnormal behavior")
